@@ -297,8 +297,8 @@ const App: React.FC = () => {
 
   return (
     <>
-      <div className={`fixed inset-0 bg-gradient-to-br transition-opacity duration-1000 ${bg1Class} ${isBg1Active ? 'opacity-100' : 'opacity-0'}`}></div>
-      <div className={`fixed inset-0 bg-gradient-to-br transition-opacity duration-1000 ${bg2Class} ${!isBg1Active ? 'opacity-100' : 'opacity-0'}`}></div>
+      <div className={`fixed inset-0 bg-gradient-to-br transition-opacity duration-1000 ${bg1Class} ${isBg1Active ? 'opacity-100' : 'opacity-0'} animate-bg-pan`} style={{ backgroundSize: '200% 200%' }}></div>
+      <div className={`fixed inset-0 bg-gradient-to-br transition-opacity duration-1000 ${bg2Class} ${!isBg1Active ? 'opacity-100' : 'opacity-0'} animate-bg-pan`} style={{ backgroundSize: '200% 200%' }}></div>
       {weatherData && <WeatherEffects condition={weatherData.current.condition} isDay={weatherData.current.is_day} showEffects={showEffects} />}
       
       <div className={`relative min-h-screen font-sans ${useDarkText ? 'text-slate-800' : 'text-white'} flex flex-col lg:flex-row`}>

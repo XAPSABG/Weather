@@ -27,8 +27,8 @@
                 '100%': { transform: 'translateY(0)', opacity: '1' },
               },
               fall: {
-                '0%': { transform: 'translateY(-10%)', opacity: '1' },
-                '100%': { transform: 'translateY(110%)', opacity: '0' },
+                '0%': { transform: 'translateY(-10%)' },
+                '100%': { transform: 'translateY(110%)' },
               },
               drift: {
                 '0%': { transform: 'translateX(-30px)' },
@@ -94,6 +94,11 @@
                 '0%': { transform: 'rotate(0deg)' },
                 '100%': { transform: 'rotate(360deg)' },
               },
+              'bg-pan': {
+                '0%': { 'background-position': '0% 50%' },
+                '50%': { 'background-position': '100% 50%' },
+                '100%': { 'background-position': '0% 50%' },
+              },
             },
             animation: {
               fadeIn: 'fadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both',
@@ -112,6 +117,7 @@
               aurora: 'aurora 20s ease-in-out infinite',
               'shooting-star': 'shooting-star linear infinite',
               'sun-rays': 'sun-rays 120s linear infinite',
+              'bg-pan': 'bg-pan 30s ease-in-out infinite',
             },
             animationDelay: {
               '100': '100ms',
