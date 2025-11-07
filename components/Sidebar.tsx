@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { Location } from '../types';
+import type { Theme } from '../App';
 import { Sun, Moon, Search, MapPin, Trash2, Settings, Loader, Locate } from './icons';
 
 interface SidebarProps {
@@ -16,6 +17,11 @@ interface SidebarProps {
   currentLocation: Location;
   onOpenSettings: () => void;
   useDarkText: boolean;
+  themes: Theme[];
+  themeMode: 'auto' | 'manual';
+  onSetThemeMode: (mode: 'auto' | 'manual') => void;
+  manualTheme: Theme | null;
+  onSelectManualTheme: (theme: Theme) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -32,6 +38,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   currentLocation,
   onOpenSettings,
   useDarkText,
+  themes,
+  themeMode,
+  onSetThemeMode,
+  manualTheme,
+  onSelectManualTheme,
 }) => {
   const [query, setQuery] = useState('');
 
@@ -58,6 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const activeFavoriteBgClass = useDarkText ? 'bg-black/10' : 'bg-white/20';
   const secondaryTextClass = useDarkText ? 'text-slate-600' : 'text-white/70';
   const tertiaryTextClass = useDarkText ? 'text-slate-500' : 'text-white/60';
+  const activeToggleClass = useDarkText ? 'bg-black/10 text-slate-800' : 'bg-white/20 text-white';
 
   return (
     <aside className={`w-full lg:w-80 xl:w-96 lg:sticky lg:top-0 lg:h-screen ${useDarkText ? 'bg-black/5' : 'bg-white/5'} dark:bg-black/20 backdrop-blur-2xl flex-shrink-0 p-6 flex flex-col space-y-8 border-r ${useDarkText ? 'border-black/10' : 'border-white/10'}`}>
@@ -149,6 +161,42 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       
+      <div className="flex-shrink-0">
+         <h2 className="text-xl font-semibold mb-4 drop-shadow-md">Appearance</h2>
+         <div className={`flex items-center ${useDarkText ? 'bg-black/5' : 'bg-white/5'} p-1 rounded-full`}>
+            <button 
+                onClick={() => onSetThemeMode('auto')}
+                className={`w-1/2 py-2 rounded-full text-sm font-semibold transition-colors ${themeMode === 'auto' ? activeToggleClass : 'text-current/70'}`}
+                aria-pressed={themeMode === 'auto'}
+            >
+                Auto
+            </button>
+            <button
+                onClick={() => onSetThemeMode('manual')}
+                className={`w-1/2 py-2 rounded-full text-sm font-semibold transition-colors ${themeMode === 'manual' ? activeToggleClass : 'text-current/70'}`}
+                aria-pressed={themeMode === 'manual'}
+            >
+                Manual
+            </button>
+        </div>
+        {themeMode === 'manual' && (
+            <div className="mt-4 grid grid-cols-3 gap-3 animate-fadeIn">
+                {themes.map(theme => (
+                    <button 
+                        key={theme.name}
+                        onClick={() => onSelectManualTheme(theme)}
+                        className={`aspect-square rounded-xl flex items-end p-2 text-white text-xs font-bold text-left shadow-inner transition-all duration-200 ${manualTheme?.name === theme.name ? 'ring-2 ring-offset-2 ring-offset-current/20 ring-white' : 'hover:scale-105'}`}
+                        style={{ background: theme.gradientCss }}
+                        aria-label={`Select ${theme.name} theme`}
+                        aria-pressed={manualTheme?.name === theme.name}
+                    >
+                        <span className="drop-shadow-md leading-tight">{theme.name}</span>
+                    </button>
+                ))}
+            </div>
+        )}
+      </div>
+
       <div className={`text-center text-xs ${tertiaryTextClass} flex-shrink-0`}>
           <p className="drop-shadow-sm">Powered by React</p>
       </div>

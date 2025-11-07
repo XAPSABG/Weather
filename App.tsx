@@ -7,6 +7,26 @@ import SettingsModal from './components/SettingsModal';
 import WeatherEffects from './components/WeatherEffects';
 import { Sun } from './components/icons';
 
+export interface Theme {
+  name: string;
+  bgClass: string;
+  gradientCss: string;
+  darkText: boolean;
+}
+
+export const themes: Theme[] = [
+  { name: 'Sunny Day', bgClass: 'from-sky-500 via-cyan-400 to-blue-500', gradientCss: 'linear-gradient(to bottom right, #0ea5e9, #22d3ee, #3b82f6)', darkText: false },
+  { name: 'Misty Morning', bgClass: 'from-gray-300 via-sky-300 to-slate-400', gradientCss: 'linear-gradient(to bottom right, #d1d5db, #7dd3fc, #94a3b8)', darkText: true },
+  { name: 'Stormy Sky', bgClass: 'from-slate-700 via-gray-500 to-indigo-800', gradientCss: 'linear-gradient(to bottom right, #334155, #6b7280, #3730a3)', darkText: false },
+  { name: 'Starry Night', bgClass: 'from-indigo-900 via-slate-900 to-black', gradientCss: 'linear-gradient(to bottom right, #312e81, #0f172a, #000000)', darkText: false },
+  { name: 'Crimson Sunset', bgClass: 'from-red-500 via-orange-600 to-yellow-500', gradientCss: 'linear-gradient(to bottom right, #ef4444, #ea580c, #eab308)', darkText: false },
+  { name: 'Aurora Borealis', bgClass: 'from-green-900 via-teal-800 to-indigo-900', gradientCss: 'linear-gradient(to bottom right, #14532d, #115e59, #312e81)', darkText: false },
+  { name: 'Cyberpunk City', bgClass: 'from-fuchsia-900 via-purple-800 to-indigo-900', gradientCss: 'linear-gradient(to bottom right, #701a75, #6b21a8, #312e81)', darkText: false },
+  { name: 'Ocean Deep', bgClass: 'from-cyan-800 via-blue-900 to-slate-900', gradientCss: 'linear-gradient(to bottom right, #155e75, #1e3a8a, #0f172a)', darkText: false },
+  { name: 'Minty Fresh', bgClass: 'from-emerald-300 via-teal-300 to-cyan-400', gradientCss: 'linear-gradient(to bottom right, #6ee7b7, #5eead4, #22d3ee)', darkText: true },
+];
+
+
 const App: React.FC = () => {
   const [location, setLocation] = useState<Location>({ name: 'New York', lat: 40.71, lon: -74.00 });
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
@@ -29,6 +49,21 @@ const App: React.FC = () => {
   const [suggestions, setSuggestions] = useState<Location[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const debounceTimeout = useRef<number | null>(null);
+  
+  const [themeMode, setThemeMode] = useState<'auto' | 'manual'>(() => {
+    return (localStorage.getItem('weatherThemeMode') as 'auto' | 'manual') || 'auto';
+  });
+  const [manualTheme, setManualTheme] = useState<Theme | null>(() => {
+    const savedTheme = localStorage.getItem('weatherManualTheme');
+    if (savedTheme) {
+        try {
+            return JSON.parse(savedTheme);
+        } catch (e) {
+            return null;
+        }
+    }
+    return null;
+  });
 
   // State for smooth background transitions
   const [bg1Class, setBg1Class] = useState('from-sky-400 to-cyan-300');
@@ -94,6 +129,24 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('weatherEffectsEnabled', JSON.stringify(showEffects));
   }, [showEffects]);
+
+  useEffect(() => {
+    localStorage.setItem('weatherThemeMode', themeMode);
+  }, [themeMode]);
+
+  useEffect(() => {
+    if (manualTheme) {
+        localStorage.setItem('weatherManualTheme', JSON.stringify(manualTheme));
+    } else {
+        localStorage.removeItem('weatherManualTheme');
+    }
+  }, [manualTheme]);
+
+  useEffect(() => {
+    if (themeMode === 'manual' && !manualTheme) {
+        setManualTheme(themes[0]);
+    }
+  }, [themeMode, manualTheme]);
 
   const handleSaveApiKey = (newKey: string) => {
     localStorage.setItem('weatherApiKey', newKey);
@@ -176,8 +229,17 @@ const App: React.FC = () => {
   const handleToggleEffects = () => {
     setShowEffects(prev => !prev);
   };
+  
+  const handleSelectManualTheme = (theme: Theme) => {
+    setManualTheme(theme);
+    setThemeMode('manual');
+  };
 
   const newBackgroundClass = useMemo(() => {
+    if (themeMode === 'manual' && manualTheme) {
+      return manualTheme.bgClass;
+    }
+
     if (isDarkMode) {
       return 'from-gray-900 via-indigo-900 to-slate-900';
     }
@@ -202,7 +264,7 @@ const App: React.FC = () => {
     }
     
     return 'from-sky-400 to-cyan-300'; // Default fallback
-  }, [weatherData, isDarkMode]);
+  }, [weatherData, isDarkMode, themeMode, manualTheme]);
 
   // Effect to handle the background transition
   useEffect(() => {
@@ -218,6 +280,10 @@ const App: React.FC = () => {
   }, [newBackgroundClass, isBg1Active, bg1Class, bg2Class]);
 
   const useDarkText = useMemo(() => {
+    if (themeMode === 'manual' && manualTheme) {
+        return manualTheme.darkText;
+    }
+      
     if (isDarkMode) return false;
     if (!weatherData) return false; 
     
@@ -225,7 +291,7 @@ const App: React.FC = () => {
     const isDay = weatherData.current.is_day;
     
     return isDay && (condition.includes('snow') || condition.includes('sleet'));
-  }, [isDarkMode, weatherData]);
+  }, [isDarkMode, weatherData, themeMode, manualTheme]);
 
   const chartStrokeColor = useDarkText ? '#334155' : 'rgba(255, 255, 255, 0.7)';
 
@@ -250,6 +316,11 @@ const App: React.FC = () => {
           currentLocation={location}
           onOpenSettings={() => setIsSettingsOpen(true)}
           useDarkText={useDarkText}
+          themes={themes}
+          themeMode={themeMode}
+          onSetThemeMode={setThemeMode}
+          manualTheme={manualTheme}
+          onSelectManualTheme={handleSelectManualTheme}
         />
         <main className="flex-1 p-6 sm:p-8 lg:p-10 overflow-y-auto">
           {loading && (
