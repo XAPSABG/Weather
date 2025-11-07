@@ -1,0 +1,7 @@
+{
+  "name": "Weather AI Dashboard",
+  "description": "A visually stunning weather application that provides current conditions and forecasts. Features include dynamic backgrounds, interactive charts, and favorite locations.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

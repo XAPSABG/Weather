@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather AI Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            backgroundImage: {
+              'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideIn: {
+                '0%': { transform: 'translateY(20px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              },
+              fall: {
+                '0%': { transform: 'translateY(-10%)', opacity: '1' },
+                '100%': { transform: 'translateY(110%)', opacity: '0' },
+              },
+              drift: {
+                '0%': { transform: 'translateX(-30px)' },
+                '50%': { transform: 'translateX(30px)' },
+                '100%': { transform: 'translateX(-30px)' },
+              },
+              lightning: {
+                '0%, 100%': { opacity: '0' },
+                '50%': { opacity: '0' },
+                '50.1%': { opacity: '0.2' },
+                '50.3%': { opacity: '0' },
+                '50.6%': { opacity: '0.8' },
+                '51%': { opacity: '0' },
+                '51.5%': { opacity: '0.4' },
+                '52%': { opacity: '0' },
+              },
+              cloudDrift: {
+                '0%': { transform: 'translateX(-150%)' },
+                '100%': { transform: 'translateX(150%)' },
+              },
+              'spin-slow': {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' },
+              },
+              'pulse-glow': {
+                '0%, 100%': { opacity: '0.8' },
+                '50%': { opacity: '1' },
+              },
+              'drift-subtle': {
+                '0%, 100%': { transform: 'translateX(-2%) translateY(1%)' },
+                '50%': { transform: 'translateX(2%) translateY(-1%)' },
+              },
+              'rain-drop': {
+                '0%': { transform: 'translateY(-2px)', opacity: '1' },
+                '70%': { opacity: '1' },
+                '100%': { transform: 'translateY(8px)', opacity: '0' },
+              },
+              'snow-fall': {
+                '0%': { transform: 'translateY(-3px)', opacity: '0' },
+                '50%': { opacity: '1' },
+                '100%': { transform: 'translateY(8px)', opacity: '0' },
+              },
+              'lightning-flash-icon': {
+                '0%, 95%, 100%': { opacity: '0.2' },
+                '97%': { opacity: '1' },
+                '99%': { opacity: '0.5' },
+              },
+              'wind-blow': {
+                '0%, 100%': { transform: 'translateX(0)' },
+                '50%': { transform: 'translateX(-8px)' },
+              },
+              aurora: {
+                '0%': { 'background-position': '0% 50%' },
+                '50%': { 'background-position': '100% 50%' },
+                '100%': { 'background-position': '0% 50%' },
+              },
+              'shooting-star': {
+                '0%': { transform: 'translateX(100vw) translateY(-10vh) rotate(215deg)', opacity: '1' },
+                '70%': { opacity: '1' },
+                '100%': { transform: 'translateX(-50vw) translateY(40vh) rotate(215deg)', opacity: '0' },
+              },
+              'sun-rays': {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' },
+              },
+            },
+            animation: {
+              fadeIn: 'fadeIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both',
+              slideIn: 'slideIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both',
+              fall: 'fall linear infinite',
+              drift: 'drift ease-in-out infinite',
+              lightning: 'lightning 7s ease-in-out infinite',
+              cloudDrift: 'cloudDrift linear infinite',
+              'spin-slow': 'spin-slow 20s linear infinite',
+              'pulse-glow': 'pulse-glow 4s ease-in-out infinite',
+              'drift-subtle': 'drift-subtle 5s ease-in-out infinite',
+              'rain-drop': 'rain-drop 1.2s linear infinite',
+              'snow-fall': 'snow-fall 2s linear infinite',
+              'lightning-flash-icon': 'lightning-flash-icon 5s ease-out infinite',
+              'wind-blow': 'wind-blow 2.5s ease-in-out infinite',
+              aurora: 'aurora 20s ease-in-out infinite',
+              'shooting-star': 'shooting-star linear infinite',
+              'sun-rays': 'sun-rays 120s linear infinite',
+            },
+            animationDelay: {
+              '100': '100ms',
+              '200': '200ms',
+              '300': '300ms',
+              '400': '400ms',
+              '500': '500ms',
+            },
+          },
+        },
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.3.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-gray-100 dark:bg-gray-900">
+    <div id="root"></div>
+  </body>
+</html>
