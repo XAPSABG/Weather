@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import type { Location } from '../types';
 import type { Theme } from '../App';
-import { Sun, Moon, Search, MapPin, Trash2, Settings, Loader, Locate } from './icons';
+import { Sun, Moon, Search, MapPin, Trash2, Settings, Loader, Locate, NavigationArrow } from './icons';
 
 interface SidebarProps {
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
   onQueryChange: (query: string) => void;
   suggestions: Location[];
   onSelectSuggestion: (location: Location) => void;
@@ -25,6 +27,8 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
+  isOpen,
+  setIsOpen,
   onQueryChange,
   suggestions,
   onSelectSuggestion,
@@ -64,143 +68,148 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
   
-  const buttonHoverClass = useDarkText ? 'hover:bg-black/10' : 'hover:bg-white/15';
-  const favoriteBgClass = useDarkText ? 'bg-black/5 hover:bg-black/10' : 'bg-white/5 hover:bg-white/15';
-  const activeFavoriteBgClass = useDarkText ? 'bg-black/10' : 'bg-white/20';
-  const secondaryTextClass = useDarkText ? 'text-slate-600' : 'text-white/70';
-  const tertiaryTextClass = useDarkText ? 'text-slate-500' : 'text-white/60';
-  const activeToggleClass = useDarkText ? 'bg-black/10 text-slate-800' : 'bg-white/20 text-white';
+  // Dynamic class styling based on background luminance
+  const panelBg = useDarkText ? 'bg-white/30 border-white/40' : 'bg-black/20 border-white/10';
+  const inputBg = useDarkText ? 'bg-white/50 focus:bg-white/70' : 'bg-white/10 focus:bg-white/20';
+  const itemHover = useDarkText ? 'hover:bg-white/40' : 'hover:bg-white/10';
+  const textMuted = useDarkText ? 'text-slate-600' : 'text-white/60';
+  const divider = useDarkText ? 'border-slate-500/10' : 'border-white/10';
 
   return (
-    <aside className={`w-full lg:w-80 xl:w-96 lg:sticky lg:top-0 lg:h-screen ${useDarkText ? 'bg-black/5' : 'bg-white/5'} dark:bg-black/20 backdrop-blur-2xl flex-shrink-0 p-6 flex flex-col space-y-8 border-r ${useDarkText ? 'border-black/10' : 'border-white/10'}`}>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-wider drop-shadow-lg">Weather AI</h1>
-        <div className="flex items-center space-x-2">
-            <button
-              onClick={onOpenSettings}
-              className={`p-2 rounded-full ${buttonHoverClass} transition-all duration-300`}
-              aria-label="Open settings"
-            >
-              <Settings className="w-6 h-6" />
-            </button>
-            <button
-              onClick={toggleTheme}
-              className={`p-2 rounded-full ${buttonHoverClass} transition-all duration-300`}
-              aria-label="Toggle theme"
-            >
-              {isDarkMode ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
-            </button>
-        </div>
-      </div>
+    <>
+      {/* Backdrop for mobile */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
 
-      <div className="relative">
-        <form onSubmit={handleSearchSubmit}>
-          <input
-            type="text"
-            value={query}
-            onChange={handleInputChange}
-            placeholder="Search for a city..."
-            className={`w-full ${useDarkText ? 'bg-black/5 placeholder-slate-500 focus:ring-slate-800/50' : 'bg-white/10 placeholder-white/70 focus:ring-white/50'} border-none rounded-xl py-3 pl-12 pr-10 focus:ring-2 focus:outline-none transition duration-300`}
-          />
-          <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 ${secondaryTextClass} pointer-events-none`} />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center space-x-1">
-            {isSearching && <Loader className={`w-5 h-5 ${secondaryTextClass}`} />}
-            <button type="button" onClick={onGeolocate} className={`${buttonHoverClass} p-1 rounded-full`} aria-label="Use my location">
-              <Locate className={`w-5 h-5 ${secondaryTextClass}`} />
-            </button>
-          </div>
-        </form>
-        {suggestions.length > 0 && (
-          <div className="absolute top-full mt-2 w-full bg-black/30 backdrop-blur-lg rounded-lg z-50 max-h-60 overflow-y-auto shadow-2xl">
-            {suggestions.map((s) => (
-              <button
-                key={`${s.name}-${s.lat}`}
-                onClick={() => handleSuggestionClick(s)}
-                className="block w-full text-left px-4 py-3 text-white hover:bg-white/20 transition-colors text-sm"
-              >
-                {s.name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="flex-grow flex flex-col min-h-0">
-        <h2 className="text-xl font-semibold mb-4 drop-shadow-md">Favorite Locations</h2>
-        <div className="space-y-2 overflow-y-auto pr-2 -mr-2 flex-grow">
-          {favorites.length > 0 ? (
-            favorites.map((fav) => (
-              <div
-                key={fav.name}
-                className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-300 ${
-                  currentLocation.name === fav.name
-                    ? activeFavoriteBgClass
-                    : favoriteBgClass
-                }`}
-                onClick={() => onSelectFavorite(fav)}
-              >
-                <div
-                  className="flex items-center space-x-3 text-left w-full truncate"
-                  aria-label={`Select ${fav.name}`}
-                >
-                  <MapPin className="w-5 h-5 flex-shrink-0" />
-                  <span className="truncate text-sm font-medium">{fav.name}</span>
-                </div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onRemoveFavorite(fav); }}
-                  className={`p-1 rounded-full text-current/70 hover:text-current opacity-0 group-hover:opacity-100 transition-all flex-shrink-0`}
-                  aria-label={`Remove ${fav.name}`}
-                >
-                  <Trash2 className="w-4 h-4" />
+      <aside className={`fixed lg:relative z-50 top-0 left-0 h-full w-80 lg:w-96 flex-shrink-0 transition-transform duration-500 ease-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:bg-transparent lg:p-6`}>
+        <div className={`h-full w-full flex flex-col p-6 lg:rounded-3xl backdrop-blur-xl border-r lg:border border-transparent ${panelBg} shadow-2xl overflow-hidden`}>
+          
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-2xl font-bold tracking-tight">Weather AI</h1>
+            <div className="flex gap-2">
+                <button onClick={toggleTheme} className={`p-2 rounded-full transition-colors ${itemHover}`}>
+                    {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
-              </div>
-            ))
-          ) : (
-            <p className={`${secondaryTextClass} text-sm`}>No favorite locations yet.</p>
-          )}
-        </div>
-      </div>
-      
-      <div className="flex-shrink-0">
-         <h2 className="text-xl font-semibold mb-4 drop-shadow-md">Appearance</h2>
-         <div className={`flex items-center ${useDarkText ? 'bg-black/5' : 'bg-white/5'} p-1 rounded-full`}>
-            <button 
-                onClick={() => onSetThemeMode('auto')}
-                className={`w-1/2 py-2 rounded-full text-sm font-semibold transition-colors ${themeMode === 'auto' ? activeToggleClass : 'text-current/70'}`}
-                aria-pressed={themeMode === 'auto'}
-            >
-                Auto
-            </button>
-            <button
-                onClick={() => onSetThemeMode('manual')}
-                className={`w-1/2 py-2 rounded-full text-sm font-semibold transition-colors ${themeMode === 'manual' ? activeToggleClass : 'text-current/70'}`}
-                aria-pressed={themeMode === 'manual'}
-            >
-                Manual
-            </button>
-        </div>
-        {themeMode === 'manual' && (
-            <div className="mt-4 grid grid-cols-3 gap-3 animate-fadeIn">
-                {themes.map(theme => (
-                    <button 
-                        key={theme.name}
-                        onClick={() => onSelectManualTheme(theme)}
-                        className={`aspect-square rounded-xl flex items-end p-2 text-white text-xs font-bold text-left shadow-inner transition-all duration-200 ${manualTheme?.name === theme.name ? 'ring-2 ring-offset-2 ring-offset-current/20 ring-white' : 'hover:scale-105'}`}
-                        style={{ background: theme.gradientCss }}
-                        aria-label={`Select ${theme.name} theme`}
-                        aria-pressed={manualTheme?.name === theme.name}
-                    >
-                        <span className="drop-shadow-md leading-tight">{theme.name}</span>
-                    </button>
-                ))}
+                <button onClick={onOpenSettings} className={`p-2 rounded-full transition-colors ${itemHover}`}>
+                    <Settings className="w-5 h-5" />
+                </button>
             </div>
-        )}
-      </div>
+          </div>
 
-      <div className={`text-center text-xs ${tertiaryTextClass} flex-shrink-0`}>
-          <p className="drop-shadow-sm">Powered by React</p>
-      </div>
-    </aside>
+          {/* Search */}
+          <div className="relative z-20 mb-6">
+            <form onSubmit={handleSearchSubmit} className="relative">
+              <input
+                type="text"
+                value={query}
+                onChange={handleInputChange}
+                placeholder="Search city..."
+                className={`w-full ${inputBg} backdrop-blur-md rounded-2xl py-3 pl-11 pr-10 outline-none transition-all placeholder:text-current/40 shadow-sm`}
+              />
+              <Search className="absolute left-3.5 top-3.5 w-5 h-5 opacity-50" />
+              <div className="absolute right-2 top-2 flex items-center">
+                 {isSearching && <Loader className="w-4 h-4 mr-2 opacity-50" />}
+                 <button type="button" onClick={onGeolocate} className={`p-1.5 rounded-xl ${itemHover} transition-colors`} title="Use my location">
+                    <Locate className="w-4 h-4 opacity-70" />
+                 </button>
+              </div>
+            </form>
+
+            {/* Suggestions Dropdown */}
+            {suggestions.length > 0 && (
+              <div className={`absolute top-full mt-2 w-full ${useDarkText ? 'bg-white/80' : 'bg-slate-900/80'} backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden animate-slideIn border border-white/10`}>
+                {suggestions.map((s) => (
+                  <button
+                    key={`${s.name}-${s.lat}`}
+                    onClick={() => handleSuggestionClick(s)}
+                    className={`w-full text-left px-4 py-3 text-sm transition-colors border-b last:border-0 ${divider} ${itemHover}`}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Favorites List */}
+          <div className="flex-1 overflow-y-auto min-h-0 pr-1 -mr-1 scrollbar-thin scrollbar-thumb-white/20">
+            <h2 className="text-xs font-bold uppercase tracking-widest opacity-50 mb-4">Saved Locations</h2>
+            <div className="space-y-2">
+              {favorites.map((fav) => (
+                <div
+                  key={fav.name}
+                  onClick={() => onSelectFavorite(fav)}
+                  className={`group relative p-3 rounded-2xl cursor-pointer transition-all border border-transparent ${
+                    currentLocation.name === fav.name
+                      ? (useDarkText ? 'bg-white/60 shadow-lg' : 'bg-white/10 shadow-lg border-white/10')
+                      : itemHover
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${useDarkText ? 'bg-slate-200/50' : 'bg-white/10'}`}>
+                        <MapPin className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="font-medium truncate text-sm">{fav.name}</p>
+                        <p className={`text-xs truncate ${textMuted}`}>{fav.lat.toFixed(2)}, {fav.lon.toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onRemoveFavorite(fav); }}
+                    className="absolute right-3 top-3 p-1.5 rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-500 transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              {favorites.length === 0 && (
+                <div className={`p-6 text-center rounded-2xl border border-dashed ${divider} ${textMuted}`}>
+                    <p className="text-sm">No favorites added yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Theme Selector Footer */}
+          <div className={`mt-6 pt-6 border-t ${divider}`}>
+            <div className={`flex p-1 rounded-xl ${useDarkText ? 'bg-slate-200/50' : 'bg-black/20'}`}>
+                <button 
+                    onClick={() => onSetThemeMode('auto')} 
+                    className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${themeMode === 'auto' ? (useDarkText ? 'bg-white shadow-sm' : 'bg-white/20 shadow-sm') : 'opacity-50 hover:opacity-100'}`}
+                >
+                    Auto
+                </button>
+                <button 
+                    onClick={() => onSetThemeMode('manual')} 
+                    className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${themeMode === 'manual' ? (useDarkText ? 'bg-white shadow-sm' : 'bg-white/20 shadow-sm') : 'opacity-50 hover:opacity-100'}`}
+                >
+                    Themes
+                </button>
+            </div>
+            
+            {themeMode === 'manual' && (
+                <div className="grid grid-cols-5 gap-2 mt-4 animate-fadeIn">
+                    {themes.map(t => (
+                        <button
+                            key={t.name}
+                            onClick={() => onSelectManualTheme(t)}
+                            className={`w-full aspect-square rounded-full shadow-inner transition-transform hover:scale-110 ${manualTheme?.name === t.name ? 'ring-2 ring-white ring-offset-2 ring-offset-transparent scale-110' : ''}`}
+                            style={{ background: t.gradientCss }}
+                            title={t.name}
+                        />
+                    ))}
+                </div>
+            )}
+          </div>
+
+        </div>
+      </aside>
+    </>
   );
 };
 

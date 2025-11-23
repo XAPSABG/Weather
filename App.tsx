@@ -15,17 +15,16 @@ export interface Theme {
 }
 
 export const themes: Theme[] = [
-  { name: 'Sunny Day', bgClass: 'from-sky-500 via-cyan-400 to-blue-500', gradientCss: 'linear-gradient(to bottom right, #0ea5e9, #22d3ee, #3b82f6)', darkText: false },
-  { name: 'Misty Morning', bgClass: 'from-gray-300 via-sky-300 to-slate-400', gradientCss: 'linear-gradient(to bottom right, #d1d5db, #7dd3fc, #94a3b8)', darkText: true },
-  { name: 'Stormy Sky', bgClass: 'from-slate-700 via-gray-500 to-indigo-800', gradientCss: 'linear-gradient(to bottom right, #334155, #6b7280, #3730a3)', darkText: false },
-  { name: 'Starry Night', bgClass: 'from-indigo-900 via-slate-900 to-black', gradientCss: 'linear-gradient(to bottom right, #312e81, #0f172a, #000000)', darkText: false },
-  { name: 'Crimson Sunset', bgClass: 'from-red-500 via-orange-600 to-yellow-500', gradientCss: 'linear-gradient(to bottom right, #ef4444, #ea580c, #eab308)', darkText: false },
-  { name: 'Aurora Borealis', bgClass: 'from-green-900 via-teal-800 to-indigo-900', gradientCss: 'linear-gradient(to bottom right, #14532d, #115e59, #312e81)', darkText: false },
-  { name: 'Cyberpunk City', bgClass: 'from-fuchsia-900 via-purple-800 to-indigo-900', gradientCss: 'linear-gradient(to bottom right, #701a75, #6b21a8, #312e81)', darkText: false },
-  { name: 'Ocean Deep', bgClass: 'from-cyan-800 via-blue-900 to-slate-900', gradientCss: 'linear-gradient(to bottom right, #155e75, #1e3a8a, #0f172a)', darkText: false },
-  { name: 'Minty Fresh', bgClass: 'from-emerald-300 via-teal-300 to-cyan-400', gradientCss: 'linear-gradient(to bottom right, #6ee7b7, #5eead4, #22d3ee)', darkText: true },
+  { name: 'Sunny Day', bgClass: 'from-blue-400 via-sky-400 to-cyan-300', gradientCss: 'linear-gradient(to bottom right, #60a5fa, #38bdf8, #67e8f9)', darkText: false },
+  { name: 'Misty Morning', bgClass: 'from-slate-300 via-gray-300 to-slate-400', gradientCss: 'linear-gradient(to bottom right, #cbd5e1, #d1d5db, #94a3b8)', darkText: true },
+  { name: 'Stormy Sky', bgClass: 'from-slate-800 via-slate-700 to-indigo-900', gradientCss: 'linear-gradient(to bottom right, #1e293b, #334155, #312e81)', darkText: false },
+  { name: 'Starry Night', bgClass: 'from-indigo-950 via-slate-900 to-black', gradientCss: 'linear-gradient(to bottom right, #1e1b4b, #0f172a, #000000)', darkText: false },
+  { name: 'Crimson Sunset', bgClass: 'from-orange-500 via-red-500 to-pink-600', gradientCss: 'linear-gradient(to bottom right, #f97316, #ef4444, #db2777)', darkText: false },
+  { name: 'Aurora Borealis', bgClass: 'from-teal-800 via-emerald-800 to-indigo-900', gradientCss: 'linear-gradient(to bottom right, #115e59, #065f46, #312e81)', darkText: false },
+  { name: 'Cyberpunk City', bgClass: 'from-fuchsia-900 via-violet-900 to-blue-900', gradientCss: 'linear-gradient(to bottom right, #701a75, #4c1d95, #1e3a8a)', darkText: false },
+  { name: 'Ocean Deep', bgClass: 'from-blue-900 via-sky-800 to-slate-900', gradientCss: 'linear-gradient(to bottom right, #1e3a8a, #075985, #0f172a)', darkText: false },
+  { name: 'Minty Fresh', bgClass: 'from-emerald-300 via-teal-200 to-cyan-200', gradientCss: 'linear-gradient(to bottom right, #6ee7b7, #99f6e4, #a5f3fc)', darkText: true },
 ];
-
 
 const App: React.FC = () => {
   const [location, setLocation] = useState<Location>({ name: 'New York', lat: 40.71, lon: -74.00 });
@@ -34,7 +33,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Location[]>(() => {
     const savedFavorites = localStorage.getItem('weatherFavorites');
-    return savedFavorites ? JSON.parse(savedFavorites) : [{ name: 'London, City of London, Greater London, United Kingdom', lat: 51.52, lon: -0.11 }];
+    return savedFavorites ? JSON.parse(savedFavorites) : [{ name: 'London, UK', lat: 51.52, lon: -0.11 }];
   });
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark';
@@ -49,6 +48,7 @@ const App: React.FC = () => {
   const [suggestions, setSuggestions] = useState<Location[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const debounceTimeout = useRef<number | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
   
   const [themeMode, setThemeMode] = useState<'auto' | 'manual'>(() => {
     return (localStorage.getItem('weatherThemeMode') as 'auto' | 'manual') || 'auto';
@@ -65,9 +65,9 @@ const App: React.FC = () => {
     return null;
   });
 
-  // State for smooth background transitions
-  const [bg1Class, setBg1Class] = useState('from-sky-400 to-cyan-300');
-  const [bg2Class, setBg2Class] = useState('from-sky-400 to-cyan-300');
+  // Background transition state
+  const [bg1Class, setBg1Class] = useState('from-blue-400 via-sky-400 to-cyan-300');
+  const [bg2Class, setBg2Class] = useState('from-blue-400 via-sky-400 to-cyan-300');
   const [isBg1Active, setIsBg1Active] = useState(true);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ const App: React.FC = () => {
         setError('Invalid or expired API key. Please check your settings.');
         setIsSettingsOpen(true);
       } else {
-        setError(err.message || 'Failed to fetch weather data. Please try again.');
+        setError(err.message || 'Failed to fetch weather data.');
       }
       console.error(err);
     } finally {
@@ -102,7 +102,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!apiKey) {
-      setError('Welcome! Please configure your Weather API key in the settings to fetch live data.');
+      setError('Welcome! Please configure your Weather API key in the settings.');
       setIsSettingsOpen(true);
       setLoading(false);
     } else {
@@ -110,29 +110,19 @@ const App: React.FC = () => {
     }
   }, [location, apiKey, loadWeatherData]);
 
+  // Auto refresh
   useEffect(() => {
     const intervalId = setInterval(() => {
         if (apiKey && location) {
-            console.log("Auto-refreshing weather data...");
             loadWeatherData(location, apiKey);
         }
-    }, 10 * 60 * 1000); // Auto-refresh every 10 minutes
-
+    }, 10 * 60 * 1000);
     return () => clearInterval(intervalId);
   }, [location, apiKey, loadWeatherData]);
 
-
-  useEffect(() => {
-    localStorage.setItem('weatherFavorites', JSON.stringify(favorites));
-  }, [favorites]);
-  
-  useEffect(() => {
-    localStorage.setItem('weatherEffectsEnabled', JSON.stringify(showEffects));
-  }, [showEffects]);
-
-  useEffect(() => {
-    localStorage.setItem('weatherThemeMode', themeMode);
-  }, [themeMode]);
+  useEffect(() => { localStorage.setItem('weatherFavorites', JSON.stringify(favorites)); }, [favorites]);
+  useEffect(() => { localStorage.setItem('weatherEffectsEnabled', JSON.stringify(showEffects)); }, [showEffects]);
+  useEffect(() => { localStorage.setItem('weatherThemeMode', themeMode); }, [themeMode]);
 
   useEffect(() => {
     if (manualTheme) {
@@ -152,13 +142,15 @@ const App: React.FC = () => {
     localStorage.setItem('weatherApiKey', newKey);
     setApiKey(newKey);
     setIsSettingsOpen(false);
-    setError(null); // Clear previous errors
+    setError(null);
   };
   
+  const handleSelectManualTheme = (theme: Theme) => {
+    setManualTheme(theme);
+  };
+
   const handleQueryChange = (query: string) => {
-    if (debounceTimeout.current) {
-      clearTimeout(debounceTimeout.current);
-    }
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     if (!query || query.length < 3) {
       setSuggestions([]);
       return;
@@ -170,38 +162,41 @@ const App: React.FC = () => {
           const results = await searchLocations(query, apiKey);
           setSuggestions(results);
         } catch (e) {
-          console.error("Search failed", e);
           setSuggestions([]);
         } finally {
           setIsSearching(false);
         }
       }
-    }, 500); // 500ms debounce
+    }, 500);
   };
 
   const handleSelectSuggestion = (loc: Location) => {
     setLocation(loc);
     setSuggestions([]);
+    setIsSidebarOpen(false); // Close mobile sidebar on select
   };
 
   const handleSelectFavorite = (favLocation: Location) => {
     setLocation(favLocation);
+    setIsSidebarOpen(false);
   };
   
   const handleGeolocate = () => {
     if (navigator.geolocation) {
+        setLoading(true);
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
-                setLocation({ name: 'Your Location', lat: latitude, lon: longitude });
+                setLocation({ name: 'Current Location', lat: latitude, lon: longitude });
             },
             (error) => {
                 console.error("Geolocation error:", error);
-                setError("Unable to retrieve your location. Please check your browser permissions.");
+                setError("Unable to retrieve location. Check permissions.");
+                setLoading(false);
             }
         );
     } else {
-        setError("Geolocation is not supported by your browser.");
+        setError("Geolocation not supported.");
     }
   };
 
@@ -216,93 +211,85 @@ const App: React.FC = () => {
   };
 
   const handleRefresh = () => {
-    if (apiKey) {
-        loadWeatherData(location, apiKey);
-    } else {
-        setError('Cannot refresh. API key is not set.');
-        setIsSettingsOpen(true);
-    }
+    if (apiKey) loadWeatherData(location, apiKey);
+    else setIsSettingsOpen(true);
   };
   
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
-  const handleToggleEffects = () => {
-    setShowEffects(prev => !prev);
-  };
-  
-  const handleSelectManualTheme = (theme: Theme) => {
-    setManualTheme(theme);
-    setThemeMode('manual');
-  };
-
+  // Background Logic
   const newBackgroundClass = useMemo(() => {
-    if (themeMode === 'manual' && manualTheme) {
-      return manualTheme.bgClass;
-    }
-
-    if (isDarkMode) {
-      return 'from-gray-900 via-indigo-900 to-slate-900';
-    }
-    
-    if (!weatherData) return 'from-sky-400 to-cyan-300';
+    if (themeMode === 'manual' && manualTheme) return manualTheme.bgClass;
+    if (isDarkMode) return 'from-slate-900 via-indigo-950 to-black';
+    if (!weatherData) return 'from-blue-400 via-sky-400 to-cyan-300';
     
     const condition = weatherData.current.condition.toLowerCase();
     const isDay = weatherData.current.is_day;
 
     if (isDay) {
-        if (condition.includes('thunder')) return 'from-slate-700 via-gray-500 to-indigo-800';
-        if (condition.includes('snow') || condition.includes('sleet')) return 'from-gray-300 via-sky-300 to-slate-400';
-        if (condition.includes('rain') || condition.includes('drizzle')) return 'from-sky-800 via-slate-600 to-gray-700';
-        if (condition.includes('cloud') || condition.includes('overcast')) return 'from-gray-400 via-slate-400 to-gray-500';
-        if (condition.includes('sun') || condition.includes('clear')) return 'from-sky-500 via-cyan-400 to-blue-500';
-    } else { // Night
-        if (condition.includes('thunder')) return 'from-indigo-900 via-slate-900 to-black';
-        if (condition.includes('snow') || condition.includes('sleet')) return 'from-slate-800 via-gray-700 to-cyan-900';
-        if (condition.includes('rain') || condition.includes('drizzle')) return 'from-slate-900 via-indigo-900 to-blue-900';
-        if (condition.includes('cloud') || condition.includes('overcast')) return 'from-slate-800 via-gray-800 to-gray-900';
-        if (condition.includes('clear')) return 'from-indigo-900 via-slate-900 to-black';
+        if (condition.includes('thunder')) return 'from-slate-700 via-slate-600 to-indigo-900';
+        if (condition.includes('snow') || condition.includes('sleet')) return 'from-slate-200 via-sky-200 to-blue-200';
+        if (condition.includes('rain') || condition.includes('drizzle')) return 'from-sky-700 via-slate-600 to-gray-600';
+        if (condition.includes('cloud') || condition.includes('overcast')) return 'from-gray-300 via-slate-300 to-gray-400';
+        if (condition.includes('sun') || condition.includes('clear')) return 'from-blue-500 via-cyan-400 to-sky-300';
+    } else {
+        if (condition.includes('thunder')) return 'from-indigo-950 via-gray-900 to-black';
+        if (condition.includes('snow')) return 'from-slate-800 via-cyan-900 to-blue-950';
+        if (condition.includes('rain')) return 'from-slate-900 via-indigo-950 to-blue-900';
+        if (condition.includes('cloud')) return 'from-slate-800 via-gray-800 to-slate-900';
+        if (condition.includes('clear')) return 'from-indigo-950 via-slate-900 to-black';
     }
-    
-    return 'from-sky-400 to-cyan-300'; // Default fallback
+    return 'from-blue-400 via-sky-400 to-cyan-300';
   }, [weatherData, isDarkMode, themeMode, manualTheme]);
 
-  // Effect to handle the background transition
   useEffect(() => {
     const currentActiveClass = isBg1Active ? bg1Class : bg2Class;
     if (newBackgroundClass !== currentActiveClass) {
-      if (isBg1Active) {
-        setBg2Class(newBackgroundClass);
-      } else {
-        setBg1Class(newBackgroundClass);
-      }
+      if (isBg1Active) setBg2Class(newBackgroundClass);
+      else setBg1Class(newBackgroundClass);
       setIsBg1Active(prev => !prev);
     }
   }, [newBackgroundClass, isBg1Active, bg1Class, bg2Class]);
 
   const useDarkText = useMemo(() => {
-    if (themeMode === 'manual' && manualTheme) {
-        return manualTheme.darkText;
-    }
-      
+    if (themeMode === 'manual' && manualTheme) return manualTheme.darkText;
     if (isDarkMode) return false;
     if (!weatherData) return false; 
-    
     const condition = weatherData.current.condition.toLowerCase();
     const isDay = weatherData.current.is_day;
-    
-    return isDay && (condition.includes('snow') || condition.includes('sleet'));
+    return isDay && (condition.includes('snow') || condition.includes('sleet') || condition.includes('mist') || condition.includes('cloud') && !condition.includes('rain'));
   }, [isDarkMode, weatherData, themeMode, manualTheme]);
-
-  const chartStrokeColor = useDarkText ? '#334155' : 'rgba(255, 255, 255, 0.7)';
 
   return (
     <>
-      <div className={`fixed inset-0 bg-gradient-to-br transition-opacity duration-1000 ${bg1Class} ${isBg1Active ? 'opacity-100' : 'opacity-0'} animate-bg-pan`} style={{ backgroundSize: '200% 200%' }}></div>
-      <div className={`fixed inset-0 bg-gradient-to-br transition-opacity duration-1000 ${bg2Class} ${!isBg1Active ? 'opacity-100' : 'opacity-0'} animate-bg-pan`} style={{ backgroundSize: '200% 200%' }}></div>
+      {/* Background Layers */}
+      <div className={`fixed inset-0 bg-gradient-to-br transition-opacity duration-[2000ms] ease-in-out ${bg1Class} ${isBg1Active ? 'opacity-100' : 'opacity-0'} animate-bg-pan`} style={{ backgroundSize: '200% 200%' }} />
+      <div className={`fixed inset-0 bg-gradient-to-br transition-opacity duration-[2000ms] ease-in-out ${bg2Class} ${!isBg1Active ? 'opacity-100' : 'opacity-0'} animate-bg-pan`} style={{ backgroundSize: '200% 200%' }} />
+      
+      {/* Effects Layer */}
       {weatherData && <WeatherEffects condition={weatherData.current.condition} isDay={weatherData.current.is_day} showEffects={showEffects} />}
       
-      <div className={`relative min-h-screen font-sans ${useDarkText ? 'text-slate-800' : 'text-white'} flex flex-col lg:flex-row`}>
+      {/* App Container */}
+      <div className={`relative h-screen overflow-hidden flex font-sans ${useDarkText ? 'text-slate-800' : 'text-white'}`}>
+        
+        {/* Mobile Sidebar Toggle - Visible only on mobile */}
+        <div className="lg:hidden fixed top-4 left-4 z-50">
+            <button 
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className={`p-3 rounded-full backdrop-blur-md shadow-lg transition-colors ${useDarkText ? 'bg-white/40 text-slate-800' : 'bg-black/30 text-white'}`}
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        {/* Sidebar */}
         <Sidebar
+          isOpen={isSidebarOpen}
+          setIsOpen={setIsSidebarOpen}
           onQueryChange={handleQueryChange}
           suggestions={suggestions}
           onSelectSuggestion={handleSelectSuggestion}
@@ -322,43 +309,48 @@ const App: React.FC = () => {
           manualTheme={manualTheme}
           onSelectManualTheme={handleSelectManualTheme}
         />
-        <main className="flex-1 p-6 sm:p-8 lg:p-10 overflow-y-auto">
-          {loading && (
-            <div className="flex items-center justify-center h-full animate-fadeIn">
-              <div className="text-center">
-                  <Sun className="w-16 h-16 mx-auto animate-spin-slow text-white/80" />
-                  <p className="mt-4 text-xl tracking-wide">Fetching Weather Wisdom...</p>
+
+        {/* Main Content */}
+        <main className="flex-1 relative overflow-y-auto overflow-x-hidden scrollbar-hide">
+          <div className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-12 min-h-full flex flex-col justify-center">
+            
+            {loading && (
+              <div className="flex flex-col items-center justify-center h-96 animate-fadeIn">
+                <Sun className="w-20 h-20 animate-spin-slow opacity-80" />
+                <p className="mt-6 text-xl font-light tracking-widest uppercase opacity-70">Gathering Forecast</p>
               </div>
-            </div>
-          )}
-          {error && (
-              <div className="flex items-center justify-center h-full animate-fadeIn">
-                   <div className="bg-red-500/80 backdrop-blur-sm p-6 rounded-lg shadow-xl text-center max-w-md text-white">
-                      <h2 className="text-2xl font-bold mb-2">Oops!</h2>
-                      <p>{error}</p>
-                   </div>
-              </div>
-          )}
-          {!loading && !error && weatherData && (
-            <WeatherDisplay
-              weatherData={weatherData}
-              onAddFavorite={handleAddFavorite}
-              isFavorite={favorites.some(fav => fav.name === weatherData.location.name)}
-              onRefresh={handleRefresh}
-              useDarkText={useDarkText}
-              chartStrokeColor={chartStrokeColor}
-              isDarkMode={isDarkMode}
-            />
-          )}
+            )}
+
+            {error && (
+                <div className="flex items-center justify-center h-96 animate-fadeIn">
+                    <div className="bg-red-500/10 backdrop-blur-md border border-red-500/20 p-8 rounded-2xl shadow-2xl max-w-lg text-center">
+                        <h2 className="text-3xl font-bold mb-4">Connection Issue</h2>
+                        <p className="text-lg opacity-90">{error}</p>
+                    </div>
+                </div>
+            )}
+
+            {!loading && !error && weatherData && (
+              <WeatherDisplay
+                weatherData={weatherData}
+                onAddFavorite={handleAddFavorite}
+                isFavorite={favorites.some(fav => fav.name === weatherData.location.name)}
+                onRefresh={handleRefresh}
+                useDarkText={useDarkText}
+                isDarkMode={isDarkMode}
+              />
+            )}
+          </div>
         </main>
       </div>
+
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         onSave={handleSaveApiKey}
         currentKey={apiKey}
         showEffects={showEffects}
-        onToggleEffects={handleToggleEffects}
+        onToggleEffects={() => setShowEffects(!showEffects)}
       />
     </>
   );

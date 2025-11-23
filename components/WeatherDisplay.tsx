@@ -1,5 +1,5 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import type { WeatherData } from '../types';
 import { getAqiInfo, getWindDirection, getPollutantInfo } from '../utils/weatherUtils';
 import { Sun, Cloud, CloudRain, CloudSnow, Wind, Sunrise, Sunset, Thermometer, Droplet, Star, StarFilled, RefreshCw, Moon, CloudLightning, AlertTriangle, Radar, NavigationArrow } from './icons';
@@ -11,7 +11,6 @@ interface WeatherDisplayProps {
   isFavorite: boolean;
   onRefresh: () => void;
   useDarkText: boolean;
-  chartStrokeColor: string;
   isDarkMode: boolean;
 }
 
@@ -23,244 +22,235 @@ const WeatherIcon: React.FC<{ condition: string; isDay: boolean; className?: str
   if (cond.includes('snow') || cond.includes('sleet')) return <CloudSnow className={className} />;
   if (cond.includes('rain') || cond.includes('drizzle')) return <CloudRain className={className} />;
   if (cond.includes('cloud') || cond.includes('overcast') || cond.includes('mist')) return <Cloud className={className} />;
-  return <Sun className={className} />; // Default icon
+  return <Sun className={className} />;
 };
 
-const Card: React.FC<{ children: React.ReactNode, className?: string, useDarkText: boolean, style?: React.CSSProperties }> = ({ children, className, useDarkText, style }) => (
+// Reusable Glass Card Component
+const GlassCard: React.FC<{ children: React.ReactNode; className?: string; useDarkText: boolean; delay?: string; title?: React.ReactNode }> = ({ children, className, useDarkText, delay, title }) => (
     <div 
-        className={`${useDarkText ? 'bg-black/5 border-black/10' : 'bg-white/5 border-white/10'} dark:bg-black/20 backdrop-blur-2xl border rounded-2xl p-6 shadow-lg animate-slideIn ${className}`}
-        style={style}
+        className={`relative overflow-hidden p-6 rounded-3xl backdrop-blur-xl border shadow-lg transition-all duration-300 hover:shadow-xl ${
+            useDarkText ? 'bg-white/30 border-white/40' : 'bg-black/20 border-white/10'
+        } ${className}`}
+        style={{ animationDelay: delay }}
     >
+        {title && <div className={`mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider opacity-60`}>{title}</div>}
         {children}
     </div>
 );
 
-const SunriseSunsetTimeline: React.FC<{ sunrise: string, sunset: string, useDarkText: boolean }> = ({ sunrise, sunset, useDarkText }) => {
-    const parseTime = (timeStr: string) => {
-        const [time, modifier] = timeStr.split(' ');
-        let [hours, minutes] = time.split(':').map(Number);
-        if (hours === 12) hours = 0; // handle 12 AM/PM
-        if (modifier === 'PM') hours += 12;
-        return hours * 60 + minutes;
-    };
-
-    const sunriseMinutes = parseTime(sunrise);
-    const sunsetMinutes = parseTime(sunset);
-    const now = new Date();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-
-    const totalDaylight = sunsetMinutes - sunriseMinutes;
-    const elapsed = Math.max(0, Math.min(totalDaylight, nowMinutes - sunriseMinutes));
-    const progress = totalDaylight > 0 ? (elapsed / totalDaylight) * 100 : 0;
-    
-    const angle = -90 + (progress / 100) * 180;
-
-    return (
-        <div className="flex flex-col items-center justify-center h-full">
-            <div className="relative w-48 h-24 mb-2">
-                <svg viewBox="0 0 100 50" className="w-full h-full overflow-visible">
-                    <path d="M 5 45 A 45 45 0 0 1 95 45" fill="none" stroke={useDarkText ? 'rgba(51, 65, 85, 0.2)' : 'rgba(255, 255, 255, 0.2)'} strokeWidth="2" strokeDasharray="2,2" />
-                </svg>
-                <div className="absolute inset-0 flex items-end justify-center" style={{ transform: `rotate(${angle}deg)`, transformOrigin: 'bottom center', transition: 'transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)' }}>
-                    <div className="w-6 h-6 bg-yellow-400 rounded-full shadow-[0_0_15px_5px] shadow-yellow-400/50" style={{ transform: 'translateY(-22px)' }} />
-                </div>
-            </div>
-            <div className={`w-full flex justify-between text-sm font-semibold ${useDarkText ? 'text-slate-600' : 'text-white/80'}`}>
-                <div className="flex items-center gap-1"><Sunrise className="w-4 h-4"/>{sunrise}</div>
-                <div className="flex items-center gap-1">{sunset}<Sunset className="w-4 h-4"/></div>
-            </div>
+const PollutantBar: React.FC<{ name: string; value: number; max: number; color: string }> = ({ name, value, max, color }) => (
+    <div className="flex items-center gap-3 text-xs">
+        <span className="w-8 font-bold opacity-70">{name}</span>
+        <div className="flex-1 h-1.5 bg-current/10 rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min(100, (value/max)*100)}%`, backgroundColor: color }} />
         </div>
-    );
-};
+        <span className="w-8 text-right font-mono">{value}</span>
+    </div>
+);
 
-// FIX: Changed `name` prop type from `string` to be more specific to match `getPollutantInfo` function signature.
-const PollutantDisplay: React.FC<{ name: 'PM2.5' | 'O3' | 'NO2', value?: number, useDarkText: boolean }> = ({ name, value, useDarkText }) => {
-    if (value === undefined) return null;
-    const info = getPollutantInfo(name, value);
-    const barBg = useDarkText ? 'bg-slate-200' : 'bg-white/20';
-
-    return (
-        <div className="text-sm">
-            <div className="flex justify-between mb-1">
-                <span className={`font-medium ${useDarkText ? 'text-slate-700' : 'text-white/80'}`}>{info.name}</span>
-                <span className="font-semibold">{value.toFixed(1)} <span className="text-xs opacity-70">µg/m³</span></span>
-            </div>
-            <div className={`w-full h-2 ${barBg} rounded-full overflow-hidden`}>
-                <div className="h-full rounded-full" style={{ width: `${info.percent}%`, backgroundColor: info.colorValue, transition: 'width 0.5s ease-in-out' }}></div>
-            </div>
-        </div>
-    );
-};
-
-
-const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onAddFavorite, isFavorite, onRefresh, useDarkText, chartStrokeColor, isDarkMode }) => {
+const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onAddFavorite, isFavorite, onRefresh, useDarkText, isDarkMode }) => {
   const { location, current, forecast, hourly, astro, alerts } = weatherData;
-
-  const chartData = hourly.slice(0, 12).map(h => ({ name: h.time.split(' ')[0], temp: h.temp_c }));
-
-  const buttonClass = `transition-all duration-300 active:scale-95 ${useDarkText ? 'bg-black/5 hover:bg-black/10' : 'bg-white/10 hover:bg-white/20'}`;
-  const disabledButtonClass = useDarkText ? 'disabled:bg-black/5' : 'disabled:bg-white/5';
-  const secondaryTextClass = useDarkText ? 'text-slate-700' : 'text-white/80';
-  const primaryBorderClass = useDarkText ? 'border-black/10' : 'border-white/10';
+  
+  // Format Chart Data
+  const chartData = hourly.slice(0, 24).map(h => ({ name: h.time, temp: h.temp_c }));
   const aqiInfo = getAqiInfo(current.aqi);
+  const strokeColor = useDarkText ? '#334155' : '#ffffff';
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 animate-fadeIn">
+    <div className="space-y-6 animate-fadeIn">
+      
+      {/* Header Actions */}
+      <div className="flex justify-between items-end mb-2">
         <div>
-          <h2 className="text-4xl sm:text-5xl font-bold drop-shadow-lg">{location.name}</h2>
-          <p className={`${secondaryTextClass} drop-shadow-md`}>{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <div className="flex items-center gap-2 text-sm opacity-70 mb-1">
+                <NavigationArrow className="w-3 h-3" />
+                <span>{location.lat.toFixed(2)}, {location.lon.toFixed(2)}</span>
+            </div>
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tighter drop-shadow-md">{location.name.split(',')[0]}</h1>
+            <p className="text-lg opacity-80 font-medium mt-1">{new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         </div>
-        <div className="flex items-center space-x-3">
-            <button onClick={onRefresh} className={`p-3 ${buttonClass} rounded-xl`}>
+        <div className="flex gap-3">
+            <button onClick={onRefresh} className={`p-3 rounded-2xl backdrop-blur-md transition-transform hover:scale-105 active:scale-95 ${useDarkText ? 'bg-white/40 hover:bg-white/60' : 'bg-white/10 hover:bg-white/20'}`}>
                 <RefreshCw className="w-5 h-5" />
             </button>
-            <button onClick={onAddFavorite} disabled={isFavorite} className={`flex items-center space-x-2 px-4 py-3 ${buttonClass} ${disabledButtonClass} rounded-xl disabled:cursor-not-allowed`}>
-              {isFavorite ? <StarFilled className="w-5 h-5 text-yellow-400" /> : <Star className="w-5 h-5" />}
-              <span className="font-semibold">{isFavorite ? 'Favorite' : 'Add Favorite'}</span>
+            <button onClick={onAddFavorite} className={`p-3 rounded-2xl backdrop-blur-md transition-transform hover:scale-105 active:scale-95 ${useDarkText ? 'bg-white/40 hover:bg-white/60' : 'bg-white/10 hover:bg-white/20'}`}>
+                {isFavorite ? <StarFilled className="w-5 h-5 text-yellow-400" /> : <Star className="w-5 h-5" />}
             </button>
         </div>
       </div>
-      
+
       {alerts.length > 0 && (
-          <Card useDarkText={useDarkText} className="!bg-gradient-to-r from-yellow-500/30 to-red-400/20" style={{ animationDelay: '100ms' }}>
-              <div className="flex items-center gap-2 text-lg font-bold mb-2">
-                <AlertTriangle className="w-5 h-5" />
-                <h3>Alerts</h3>
+          <div className="w-full bg-red-500/20 backdrop-blur-md border border-red-500/30 p-4 rounded-2xl flex items-start gap-3 animate-slideIn">
+              <AlertTriangle className="w-6 h-6 text-red-400 shrink-0" />
+              <div>
+                  <h3 className="font-bold text-red-200">Weather Alert</h3>
+                  <p className="text-sm opacity-90">{alerts[0]}</p>
               </div>
-              <div className="max-h-24 overflow-y-auto text-sm pr-2">
-                {alerts.map((alert, i) => <p key={i} className="mb-1">{alert}</p>)}
-              </div>
-          </Card>
+          </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        {/* Current Weather */}
-        <Card useDarkText={useDarkText} className="lg:col-span-3" style={{ animationDelay: '150ms' }}>
+      {/* Bento Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        
+        {/* Main Hero Card (2x2 on large) */}
+        <GlassCard useDarkText={useDarkText} className="md:col-span-2 row-span-2 flex flex-col justify-between" delay="0ms">
             <div className="flex justify-between items-start">
-                <div>
-                    <p className={`text-xl ${secondaryTextClass}`}>{current.condition}</p>
-                    <div className="flex items-start">
-                        <p className="text-8xl sm:text-9xl font-bold drop-shadow-md">{current.temp_c}</p>
-                        <p className="text-3xl font-bold mt-3">°C</p>
+                <div className="bg-current/5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-sm">Now</div>
+                <WeatherIcon condition={current.condition} isDay={current.is_day} className="w-32 h-32 md:w-48 md:h-48 drop-shadow-2xl -mr-4 -mt-4 opacity-90" />
+            </div>
+            <div className="relative z-10">
+                <div className="flex items-start">
+                    <span className="text-8xl md:text-9xl font-bold tracking-tighter">{current.temp_c}</span>
+                    <span className="text-4xl md:text-5xl font-medium mt-4">°</span>
+                </div>
+                <p className="text-2xl md:text-3xl font-medium opacity-90">{current.condition}</p>
+                <div className="flex gap-4 mt-4 text-sm font-semibold opacity-70">
+                    <span>H: {forecast[0].maxtemp_c}°</span>
+                    <span>L: {forecast[0].mintemp_c}°</span>
+                    <span>Feels like {current.feelslike_c}°</span>
+                </div>
+            </div>
+        </GlassCard>
+
+        {/* Hourly Chart (2 cols) */}
+        <GlassCard useDarkText={useDarkText} className="md:col-span-2 h-64 md:h-auto" title={<><span className="w-4 h-4 mr-2"><RefreshCw /></span> 24-Hour Forecast</>} delay="100ms">
+            <div className="h-full w-full -ml-4">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                        <defs>
+                            <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor={strokeColor} stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor={strokeColor} stopOpacity={0}/>
+                            </linearGradient>
+                        </defs>
+                        <Tooltip 
+                            contentStyle={{ 
+                                backgroundColor: useDarkText ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)', 
+                                border: 'none', 
+                                borderRadius: '12px', 
+                                backdropFilter: 'blur(10px)',
+                                color: useDarkText ? '#000' : '#fff'
+                            }} 
+                            itemStyle={{ color: strokeColor }}
+                            formatter={(value: any) => [`${value}°`, 'Temp']}
+                        />
+                        <Area type="monotone" dataKey="temp" stroke={strokeColor} strokeWidth={3} fillOpacity={1} fill="url(#colorTemp)" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 10, opacity: 0.7 }} interval={3} />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+        </GlassCard>
+
+        {/* Radar Map (1 col) */}
+        <GlassCard useDarkText={useDarkText} className="p-0 overflow-hidden relative group h-48 md:h-auto" delay="200ms">
+             <div className="absolute top-4 left-4 z-10 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg text-xs font-bold text-white flex gap-2">
+                 <Radar className="w-4 h-4"/> Radar
+             </div>
+             <div className="w-full h-full opacity-80 transition-opacity group-hover:opacity-100 grayscale-[30%] group-hover:grayscale-0">
+                <WeatherRadar lat={location.lat} lon={location.lon} isDarkMode={isDarkMode} />
+             </div>
+        </GlassCard>
+
+        {/* Air Quality (1 col) */}
+        <GlassCard useDarkText={useDarkText} title="Air Quality" delay="300ms">
+            <div className="flex flex-col justify-between h-full pb-4">
+                <div className="flex items-center justify-between">
+                    <span className="text-4xl font-bold">{current.aqi}</span>
+                    <div className={`px-3 py-1 rounded-full text-xs font-bold ${useDarkText ? 'bg-black/10' : 'bg-white/20'}`} style={{ color: aqiInfo.colorValue }}>{aqiInfo.text}</div>
+                </div>
+                <div className="h-2 w-full bg-current/10 rounded-full mt-4 mb-6 relative overflow-hidden">
+                    <div className="absolute h-full rounded-full transition-all duration-1000" style={{ width: `${(current.aqi / 10) * 100}%`, background: `linear-gradient(90deg, #4ade80, #ef4444)` }}></div>
+                </div>
+                <div className="space-y-2">
+                    <PollutantBar name="PM2.5" value={current.pm2_5} max={100} color="#fbbf24" />
+                    <PollutantBar name="NO2" value={current.no2} max={200} color="#60a5fa" />
+                    <PollutantBar name="O3" value={current.o3} max={150} color="#34d399" />
+                </div>
+            </div>
+        </GlassCard>
+
+        {/* Small Detail Cards (Row of 4) */}
+        <GlassCard useDarkText={useDarkText} delay="400ms">
+            <div className="flex flex-col h-full justify-between">
+                <div className="flex items-center gap-2 text-sm opacity-60 font-bold"><Wind className="w-4 h-4"/> Wind</div>
+                <div className="flex items-end gap-1">
+                    <span className="text-3xl font-bold">{current.wind_kph}</span>
+                    <span className="text-sm font-medium mb-1 opacity-70">km/h</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-bold opacity-80 mt-2">
+                     <div style={{ transform: `rotate(${current.wind_degree}deg)` }} className="bg-current/10 p-1 rounded-full"><NavigationArrow className="w-3 h-3"/></div>
+                     {getWindDirection(current.wind_degree)}
+                </div>
+            </div>
+        </GlassCard>
+
+        <GlassCard useDarkText={useDarkText} delay="450ms">
+            <div className="flex flex-col h-full justify-between">
+                <div className="flex items-center gap-2 text-sm opacity-60 font-bold"><Droplet className="w-4 h-4"/> Humidity</div>
+                <span className="text-3xl font-bold">{current.humidity}%</span>
+                <div className="text-xs opacity-70 mt-2">Dew Point: {current.feelslike_c - 2}°</div>
+            </div>
+        </GlassCard>
+
+        <GlassCard useDarkText={useDarkText} delay="500ms">
+            <div className="flex flex-col h-full justify-between">
+                <div className="flex items-center gap-2 text-sm opacity-60 font-bold"><Sun className="w-4 h-4"/> UV Index</div>
+                <span className="text-3xl font-bold">{current.uv}</span>
+                <div className="text-xs opacity-70 mt-2">{current.uv > 5 ? 'High Protection' : 'Low Protection'}</div>
+            </div>
+        </GlassCard>
+
+        <GlassCard useDarkText={useDarkText} delay="550ms">
+            <div className="flex flex-col h-full justify-between">
+                <div className="flex items-center gap-2 text-sm opacity-60 font-bold"><Thermometer className="w-4 h-4"/> Feels Like</div>
+                <span className="text-3xl font-bold">{current.feelslike_c}°</span>
+                <div className="text-xs opacity-70 mt-2">Actual: {current.temp_c}°</div>
+            </div>
+        </GlassCard>
+
+        {/* 7 Day Forecast (Vertical List) */}
+        <GlassCard useDarkText={useDarkText} className="md:col-span-2 h-full" title="7-Day Forecast" delay="600ms">
+            <div className="divide-y divide-current/10">
+                {forecast.map((day, i) => (
+                    <div key={day.date} className="grid grid-cols-4 items-center py-3 hover:bg-current/5 transition-colors px-2 rounded-lg">
+                        <span className="font-medium text-sm">{i === 0 ? 'Today' : new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                        <div className="flex justify-center"><WeatherIcon condition={day.condition} isDay={true} className="w-6 h-6" /></div>
+                        <span className="text-xs opacity-60 col-span-1 truncate px-2 text-center hidden sm:block">{day.condition}</span>
+                        <div className="flex justify-end gap-3 text-sm font-semibold">
+                            <span className="opacity-50">{day.mintemp_c}°</span>
+                            <span>{day.maxtemp_c}°</span>
+                        </div>
                     </div>
-                </div>
-                <WeatherIcon condition={current.condition} isDay={current.is_day} className="w-28 h-28 sm:w-36 sm:h-36 drop-shadow-lg" />
+                ))}
             </div>
-        </Card>
+        </GlassCard>
 
-        {/* Details Grid */}
-        <div className="lg:col-span-2 grid grid-cols-2 grid-rows-2 gap-6">
-            <Card useDarkText={useDarkText} style={{ animationDelay: '200ms' }}>
-                <div className={`flex items-center justify-between ${secondaryTextClass} mb-2`}>
-                    <p className="text-sm">Feels Like</p>
-                    <Thermometer className="w-5 h-5" />
-                </div>
-                <p className="text-3xl font-semibold">{current.feelslike_c}°C</p>
-            </Card>
-            <Card useDarkText={useDarkText} style={{ animationDelay: '250ms' }}>
-                <div className={`flex items-center justify-between ${secondaryTextClass} mb-2`}>
-                    <p className="text-sm">Wind</p>
-                    <Wind className="w-5 h-5" />
-                </div>
-                <div className="flex items-center gap-2">
-                   <p className="text-3xl font-semibold">{current.wind_kph}<span className="text-lg ml-1">kph</span></p>
-                   <div className="flex items-center gap-1 font-semibold">
-                      <NavigationArrow className="w-5 h-5" style={{ transform: `rotate(${current.wind_degree}deg)` }}/>
-                      {getWindDirection(current.wind_degree)}
-                   </div>
-                </div>
-            </Card>
-            <Card useDarkText={useDarkText} style={{ animationDelay: '300ms' }}>
-                <div className={`flex items-center justify-between ${secondaryTextClass} mb-2`}>
-                    <p className="text-sm">Humidity</p>
-                    <Droplet className="w-5 h-5" />
-                </div>
-                <p className="text-3xl font-semibold">{current.humidity}%</p>
-            </Card>
-            <Card useDarkText={useDarkText} style={{ animationDelay: '350ms' }}>
-                <div className={`flex items-center justify-between ${secondaryTextClass} mb-2`}>
-                    <p className="text-sm">UV Index</p>
-                    <Sun className="w-5 h-5" />
-                </div>
-                <p className="text-3xl font-semibold">{current.uv}</p>
-            </Card>
-        </div>
+        {/* Sun Times */}
+        <GlassCard useDarkText={useDarkText} className="md:col-span-2 flex flex-col justify-center" delay="650ms">
+             <div className="flex justify-between items-center px-4">
+                 <div className="text-center">
+                     <div className="mb-2 opacity-50 text-sm font-bold tracking-wider">SUNRISE</div>
+                     <Sunrise className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
+                     <div className="text-xl font-bold">{astro.sunrise}</div>
+                 </div>
+                 
+                 {/* Visual Arc */}
+                 <div className="flex-1 px-8 relative h-20">
+                     <svg className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                         <path d="M0,40 Q50,-40 100,40" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="opacity-30" vectorEffect="non-scaling-stroke" />
+                         <circle cx="50%" cy="0" r="8" fill="#fbbf24" className="shadow-[0_0_20px_rgba(251,191,36,0.6)]" />
+                     </svg>
+                 </div>
+
+                 <div className="text-center">
+                     <div className="mb-2 opacity-50 text-sm font-bold tracking-wider">SUNSET</div>
+                     <Sunset className="w-8 h-8 mx-auto mb-2 text-orange-400" />
+                     <div className="text-xl font-bold">{astro.sunset}</div>
+                 </div>
+             </div>
+        </GlassCard>
+
       </div>
-      
-      {/* Hourly Forecast & Chart */}
-      <Card useDarkText={useDarkText} style={{ animationDelay: '400ms' }}>
-        <h3 className="text-lg font-bold mb-4">Hourly Forecast</h3>
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={useDarkText ? 'rgba(48, 63, 89, 0.1)' : 'rgba(255, 255, 255, 0.1)'} />
-              <XAxis dataKey="name" stroke={chartStrokeColor} fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke={chartStrokeColor} fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ backgroundColor: useDarkText ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.8)', border: 'none', borderRadius: '10px', boxShadow: '0 4px 30px rgba(0,0,0,0.1)' }} labelStyle={{ color: useDarkText ? '#000' : '#fff' }} itemStyle={{ color: '#a78bfa', fontWeight: 'bold' }}/>
-              <Line type="monotone" dataKey="temp" stroke="#a78bfa" strokeWidth={3} dot={{ r: 4, fill: '#a78bfa' }} activeDot={{ r: 8, stroke: useDarkText ? '#334155' : '#fff', strokeWidth: 2, fill: '#a78bfa' }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
-      
-      {/* 7-Day Forecast */}
-      <Card useDarkText={useDarkText} style={{ animationDelay: '500ms' }}>
-        <h3 className="text-lg font-bold mb-4">7-Day Forecast</h3>
-        <div className="space-y-3">
-          {forecast.map(day => (
-            <div key={day.date} className={`grid grid-cols-[1fr_auto_1fr_auto] sm:grid-cols-[1fr_auto_1fr_auto] items-center gap-4 text-sm sm:text-base border-b ${primaryBorderClass} pb-3 last:border-b-0`}>
-                <p className="font-medium">{new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' })}</p>
-                <WeatherIcon condition={day.condition} isDay={true} className="w-8 h-8" />
-                <p className={`${secondaryTextClass} hidden sm:block`}>{day.condition}</p>
-                <p className="justify-self-end font-semibold">{day.mintemp_c}° / {day.maxtemp_c}°C</p>
-            </div>
-          ))}
-        </div>
-      </Card>
-      
-      {/* Weather Radar */}
-      <Card useDarkText={useDarkText} style={{ animationDelay: '600ms' }}>
-        <div className="flex items-center gap-2 text-lg font-bold mb-4">
-          <Radar className="w-5 h-5" />
-          <h3>Weather Radar</h3>
-        </div>
-        <div className="aspect-video w-full overflow-hidden rounded-lg">
-          <WeatherRadar lat={location.lat} lon={location.lon} isDarkMode={isDarkMode} />
-        </div>
-      </Card>
-
-
-      {/* Astro & AQI */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-          <Card useDarkText={useDarkText} style={{ animationDelay: '700ms' }}>
-              <h3 className="text-lg font-bold mb-4">Sunrise & Sunset</h3>
-              <SunriseSunsetTimeline sunrise={astro.sunrise} sunset={astro.sunset} useDarkText={useDarkText} />
-          </Card>
-          <Card useDarkText={useDarkText} style={{ animationDelay: '750ms' }}>
-              <h3 className="text-lg font-bold mb-4">Air Quality & Pollutants</h3>
-               <div className="flex flex-col sm:flex-row items-center justify-center h-full sm:gap-6 gap-4">
-                  <div className="text-center flex-shrink-0">
-                      <div className="relative flex items-center justify-center">
-                        <p className="absolute text-4xl font-bold drop-shadow-md">{current.aqi}</p>
-                        <svg className="w-24 h-24" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="45" fill="none" stroke={useDarkText ? 'rgba(51, 65, 85, 0.1)' : 'rgba(255, 255, 255, 0.1)'} strokeWidth="10" />
-                            <circle cx="50" cy="50" r="45" fill="none" stroke={aqiInfo.colorValue} strokeWidth="10" strokeDasharray="283" strokeDashoffset={283 - (283 * (current.aqi / 6))} strokeLinecap="round" transform="rotate(-90 50 50)" style={{ transition: 'stroke-dashoffset 0.8s ease-out' }}/>
-                        </svg>
-                      </div>
-                      <p className={`font-semibold text-lg ${aqiInfo.colorClass}`}>{aqiInfo.text}</p>
-                      <p className={`text-xs max-w-[120px] mx-auto ${secondaryTextClass}`}>{aqiInfo.message}</p>
-                  </div>
-                  <div className="w-full space-y-3">
-                      <PollutantDisplay name="PM2.5" value={current.pm2_5} useDarkText={useDarkText} />
-                      <PollutantDisplay name="O3" value={current.o3} useDarkText={useDarkText} />
-                      <PollutantDisplay name="NO2" value={current.no2} useDarkText={useDarkText} />
-                  </div>
-              </div>
-          </Card>
-      </div>
-
     </div>
   );
 };
